@@ -25,11 +25,19 @@ func newLoggingRoundTripper(wrapped http.RoundTripper, logLabel string) http.Rou
 }
 
 func (l *loggingRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
-	reqClone := CloneRequest(request) // clone it to preserve request.Body
+	reqClone, err := CloneRequest(request) // clone it to preserve request.Body
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := l.RoundTripper.RoundTrip(request)
 
-	yaml := NewConfig(l.logLabel, reqClone, resp).ToYAML()
+	config, err := NewConfig(l.logLabel, reqClone, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	yaml := config.ToYAML()
 	fmt.Println(WithEyecatcher(l.logLabel, yaml))
 
 	return resp, err

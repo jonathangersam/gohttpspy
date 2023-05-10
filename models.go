@@ -17,37 +17,42 @@ type Config struct {
 	content Content
 }
 
-func NewConfig(desc string, req *http.Request, resp *http.Response) *Config {
+func NewConfig(desc string, req *http.Request, resp *http.Response) (*Config, error) {
 	// parse request body
 	var reqBody []byte
 	if req.Body != nil {
 		var err error
-		reqBody, err = io.ReadAll(req.Body)
-		if err != nil {
-			panic(err)
-		}
 
-		req.Body = ioutil.NopCloser(bytes.NewReader(reqBody))
+		if req.Body != nil {
+			reqBody, err = io.ReadAll(req.Body)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Body = ioutil.NopCloser(bytes.NewReader(reqBody))
+		}
 	}
 
 	// parse response body
 	var respBody []byte
 	if resp.Body != nil {
-		ps, err := io.ReadAll(resp.Body)
-		if err != nil {
-			panic(err)
-		}
-		resp.Body = ioutil.NopCloser(bytes.NewReader(ps))
+		if resp.Body != nil {
+			ps, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = ioutil.NopCloser(bytes.NewReader(ps))
 
-		// indent
-		buf := bytes.NewBuffer(nil)
-		if err := json.Indent(buf, ps, "", "  "); err != nil {
-			panic(err)
-		}
+			// indent
+			buf := bytes.NewBuffer(nil)
+			if err := json.Indent(buf, ps, "", "  "); err != nil {
+				return nil, err
+			}
 
-		respBody, err = io.ReadAll(buf)
-		if err != nil {
-			panic(err)
+			respBody, err = io.ReadAll(buf)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -72,7 +77,7 @@ func NewConfig(desc string, req *http.Request, resp *http.Response) *Config {
 		},
 	}
 
-	return &config
+	return &config, nil
 }
 
 func (c *Config) ToYAML() string {

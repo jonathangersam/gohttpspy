@@ -9,20 +9,20 @@ import (
 	"strings"
 )
 
-func CloneRequest(r *http.Request) *http.Request {
+func CloneRequest(r *http.Request) (*http.Request, error) {
 	clone := *r
 
 	if r.Body != nil {
 		ps, err := io.ReadAll(r.Body)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		r.Body = ioutil.NopCloser(bytes.NewReader(ps))
 		clone.Body = ioutil.NopCloser(bytes.NewReader(ps))
 	}
 
-	return &clone
+	return &clone, nil
 }
 
 func WithEyecatcher(label, s string) string {
