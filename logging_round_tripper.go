@@ -21,6 +21,9 @@ func (l *loggingRoundTripper) RoundTrip(request *http.Request) (*http.Response, 
 	}
 
 	resp, err := l.RoundTripper.RoundTrip(request)
+	if err != nil {
+		return nil, err
+	}
 
 	report := Report{
 		Description: l.logLabel,
@@ -30,8 +33,8 @@ func (l *loggingRoundTripper) RoundTrip(request *http.Request) (*http.Response, 
 		return nil, err
 	}
 
-	yaml := report.ToYAML() // TODO let user select YAML or JSON
-	fmt.Fprintln(l.output, WithEyecatcher(l.logLabel, yaml))
+	yaml := report.ToYAML()                                  // TODO let user select YAML or JSON
+	fmt.Fprintln(l.output, WithEyecatcher(l.logLabel, yaml)) // TODO make pre-write wrapping function user-defined
 
 	return resp, err
 }
