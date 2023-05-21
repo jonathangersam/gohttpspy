@@ -44,7 +44,7 @@ func (r *Report) Parse(req *http.Request, resp *http.Response) error {
 
 			// indent
 			buf := bytes.NewBuffer(nil)
-			if err := json.Indent(buf, ps, "", "  "); err != nil {
+			if err := json.Indent(buf, ps, "", "  "); err != nil { // TODO consider non-JSON content!
 				return err
 			}
 

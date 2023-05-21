@@ -20,7 +20,14 @@ func (l *loggingRoundTripper) RoundTrip(request *http.Request) (*http.Response, 
 		return nil, err
 	}
 
-	resp, err := l.RoundTripper.RoundTrip(request)
+	// nil roundtripper should use http.DefaultTransport, just like stdlib implementation
+	rt := l.RoundTripper
+	if rt == nil {
+		rt = http.DefaultTransport
+	}
+
+	//resp, err := l.RoundTripper.RoundTrip(request)
+	resp, err := rt.RoundTrip(request)
 	if err != nil {
 		return nil, err
 	}
