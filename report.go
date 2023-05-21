@@ -11,13 +11,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config defines fields to be used for generating valid mmock configs.
-// This is a helper for writers of e2e tests
-type Config struct {
-	content Content
+type Report struct {
+	Description string
+	content     Content
 }
 
-func NewConfig(desc string, req *http.Request, resp *http.Response) (*Config, error) {
+func (r *Report) Parse(req *http.Request, resp *http.Response) error {
 	// parse request body
 	var reqBody []byte
 	if req.Body != nil {
@@ -26,7 +25,7 @@ func NewConfig(desc string, req *http.Request, resp *http.Response) (*Config, er
 		if req.Body != nil {
 			reqBody, err = io.ReadAll(req.Body)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			req.Body = ioutil.NopCloser(bytes.NewReader(reqBody))
@@ -39,53 +38,51 @@ func NewConfig(desc string, req *http.Request, resp *http.Response) (*Config, er
 		if resp.Body != nil {
 			ps, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			resp.Body = ioutil.NopCloser(bytes.NewReader(ps))
 
 			// indent
 			buf := bytes.NewBuffer(nil)
 			if err := json.Indent(buf, ps, "", "  "); err != nil {
-				return nil, err
+				return err
 			}
 
 			respBody, err = io.ReadAll(buf)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	// fill mmock struct that will be used to generate YAML
-	config := Config{
-		content: Content{
-			Description: desc,
-			Request: Request{
-				Scheme: "http",
-				//Path:                  req.URL.String(), // TODO
-				Path:                  req.URL.Path,
-				Method:                req.Method,
-				QueryStringParameters: QueryStringParameters(req.URL.Query()),
-				Headers:               HttpHeaders(req.Header),
-				Body:                  string(reqBody),
-			},
-			Response: Response{
-				StatusCode: resp.StatusCode,
-				Headers:    HttpHeaders(resp.Header),
-				Body:       string(respBody),
-			},
+	// fill struct that will be used to generate YAML
+	r.content = Content{
+		Description: r.Description,
+		Request: Request{
+			Scheme: "http",
+			//Path:                  req.URL.String(), // TODO
+			Path:                  req.URL.Path,
+			Method:                req.Method,
+			QueryStringParameters: QueryStringParameters(req.URL.Query()),
+			Headers:               HttpHeaders(req.Header),
+			Body:                  string(reqBody),
+		},
+		Response: Response{
+			StatusCode: resp.StatusCode,
+			Headers:    HttpHeaders(resp.Header),
+			Body:       string(respBody),
 		},
 	}
 
-	return &config, nil
+	return nil
 }
 
-func (c *Config) ToYAML() string {
+func (r *Report) ToYAML() string {
 	//ps, err := yaml.Marshal(m.content)
 	buf := bytes.NewBuffer([]byte{})
 	enc := yaml.NewEncoder(buf)
 	enc.SetIndent(2)
-	err := enc.Encode(c.content)
+	err := enc.Encode(r.content)
 	if err != nil {
 		log.Fatal(err)
 	}
